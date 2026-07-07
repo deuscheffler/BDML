@@ -1,16 +1,14 @@
-import sqlalchemy
-import pyodbc
 from sqlalchemy import create_engine
 
-SERVER = "localhost"          # Cambia si tu instancia tiene otro nombre
+SERVER = "OMEGA-DELL"          # Lo confirmaremos con la consulta anterior
 DATABASE = "ML_DATABASE"
+DRIVER = "ODBC Driver 18 for SQL Server"
 
-engine = create_engine(
+connection_string = (
     f"mssql+pyodbc://@{SERVER}/{DATABASE}"
-    "?driver=ODBC+Driver+17+for+SQL+Server"
+    f"?driver={DRIVER.replace(' ', '+')}"
     "&trusted_connection=yes"
+    "&TrustServerCertificate=yes"
 )
 
-
-
-print(pyodbc.drivers())
+engine = create_engine(connection_string)
