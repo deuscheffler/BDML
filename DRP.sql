@@ -1,0 +1,26 @@
+SELECT
+    name,
+    recovery_model_desc
+FROM sys.databases
+WHERE name = DB_NAME();
+
+BACKUP DATABASE BD_ML_RELACIONAL
+TO DISK = 'C:\SQLBackups\BD_ML_FULL.bak'
+WITH
+    INIT,
+    FORMAT,
+    CHECKSUM,
+    STATS = 10;
+
+    RESTORE VERIFYONLY
+FROM DISK = 'C:\SQLBackups\BD_ML_FULL.bak';
+
+BACKUP DATABASE BD_ML_RELACIONAL
+TO DISK = 'C:\SQLBackups\BD_ML_DIFF.bak'
+WITH
+    DIFFERENTIAL,
+    INIT,
+    NAME = 'Respaldo Diferencial BD_ML_RELACIONAL',
+    CHECKSUM,
+    STATS = 10;
+GO
