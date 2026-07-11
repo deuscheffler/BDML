@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+plotly
+pymongo
+python-dotenv
+scikit-learn
+joblib
+pyodbc
+sqlalchemy
+streamlit-option-menu
