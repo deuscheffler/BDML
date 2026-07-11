@@ -1,0 +1,14 @@
+{
+  "modelo": "KNN",
+  "requiere_escalado": true,
+  "features_leakage_excluidas": [
+    "estado_entrega",
+    "tipo_transaccion"
+  ],
+  "metricas_test": {
+    "f1": 0.7832,
+    "roc_auc": 0.5372,
+    "accuracy": 0.661
+  },
+  "fecha_entrenamiento": "2026-07-10"
+}
