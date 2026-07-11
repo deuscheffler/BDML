@@ -43,7 +43,7 @@ else:
     print(f"Ruta completa: {os.path.abspath(RUTA_CSV)}")
 
 
-CARPETA_GRAFICAS = "graficas1111"
+CARPETA_GRAFICAS = "graficas"
 TAMANO_MUESTRA_TSNE = 5000
 
 # Pesos para dar más importancia a 'tipo_transaccion', la variable con mayor
@@ -132,60 +132,74 @@ def construir_espacio_ponderado(df: pd.DataFrame, df_modelo: pd.DataFrame) -> np
 
 
 # ============================================================================
-# 3. SELECCIÓN DEL NÚMERO ÓPTIMO DE CLUSTERS
+# 3. SELECCIÓN DEL NÚMERO ÓPTIMO DE CLUSTERS (FORZADO A K=2)
 # ============================================================================
 def seleccionar_k(X_ponderado: np.ndarray, k_range=range(2, 9)) -> int:
-
+    """Fuerza el uso de 2 clusters (k=2) para el modelo K-Means."""
+    k_optimo = 2  # FORZAR a 2 clusters
+    
+    print(f"\n[3] Forzando k=2 clusters...")
+    
+    # Calcular métricas para k=2 para tener referencia
+    km = KMeans(n_clusters=k_optimo, random_state=RANDOM_STATE, n_init=10)
+    labels = km.fit_predict(X_ponderado)
+    
+    sil = silhouette_score(X_ponderado, labels, sample_size=10000, random_state=RANDOM_STATE)
+    cal = calinski_harabasz_score(X_ponderado, labels)
+    dav = davies_bouldin_score(X_ponderado, labels)
+    
+    print(f"Métricas para k=2:")
+    print(f"  Silhouette: {sil:.4f}")
+    print(f"  Calinski-Harabasz: {cal:.2f}")
+    print(f"  Davies-Bouldin: {dav:.4f}")
+    
+    # Mostrar tabla comparativa con otros valores de k
     silhouette_scores, calinski_scores, davies_scores = [], [], []
     
     for k in k_range:
-        km = KMeans(n_clusters=k, random_state=RANDOM_STATE, n_init=10)
-        labels = km.fit_predict(X_ponderado)
+        km_temp = KMeans(n_clusters=k, random_state=RANDOM_STATE, n_init=10)
+        labels_temp = km_temp.fit_predict(X_ponderado)
         silhouette_scores.append(
-            silhouette_score(X_ponderado, labels, sample_size=10000, random_state=RANDOM_STATE)
+            silhouette_score(X_ponderado, labels_temp, sample_size=10000, random_state=RANDOM_STATE)
         )
-        calinski_scores.append(calinski_harabasz_score(X_ponderado, labels))
-        davies_scores.append(davies_bouldin_score(X_ponderado, labels))
-
-    k_optimo = list(k_range)[int(np.argmax(silhouette_scores))]
-    print(f"k óptimo (espacio ponderado): {k_optimo}  (silhouette={max(silhouette_scores):.4f})")
-
-    # Gráfica 1: selección de k
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    fig.suptitle("Selección del número óptimo de clusters (k) — espacio ponderado", fontsize=13)
-
-    axes[0].plot(list(k_range), silhouette_scores, "o-", color=COLORES[0])
-    axes[0].axvline(k_optimo, color="red", linestyle="--", alpha=0.6, label=f"k óptimo = {k_optimo}")
-    axes[0].set_title("Silhouette Score (mayor es mejor)")
-    axes[0].set_xlabel("k")
-    axes[0].set_ylabel("Score")
-    axes[0].legend()
-    axes[0].grid(alpha=0.3)
-
-    axes[1].plot(list(k_range), calinski_scores, "o-", color=COLORES[1])
-    axes[1].axvline(k_optimo, color="red", linestyle="--", alpha=0.6)
-    axes[1].set_title("Calinski-Harabasz (mayor es mejor)")
-    axes[1].set_xlabel("k")
-    axes[1].grid(alpha=0.3)
-
-    axes[2].plot(list(k_range), davies_scores, "o-", color=COLORES[2])
-    axes[2].axvline(k_optimo, color="red", linestyle="--", alpha=0.6)
-    axes[2].set_title("Davies-Bouldin (menor es mejor)")
-    axes[2].set_xlabel("k")
-    axes[2].grid(alpha=0.3)
-
-    _guardar_figura("01_seleccion_k.png")
+        calinski_scores.append(calinski_harabasz_score(X_ponderado, labels_temp))
+        davies_scores.append(davies_bouldin_score(X_ponderado, labels_temp))
     
-    # Mostrar tabla de resultados
     tabla_k = pd.DataFrame({
         'k': list(k_range),
         'silhouette': silhouette_scores,
         'calinski_harabasz': calinski_scores,
         'davies_bouldin': davies_scores
     })
-    print("\nTabla de selección de k:")
+    print("\nTabla comparativa de selección de k:")
     print(tabla_k.round(4))
-
+    
+    # Gráfica 1: selección de k con k=2 resaltado
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig.suptitle("Selección del número óptimo de clusters (k) — espacio ponderado", fontsize=13)
+    
+    axes[0].plot(list(k_range), silhouette_scores, "o-", color=COLORES[0])
+    axes[0].axvline(k_optimo, color="red", linestyle="--", alpha=0.6, label=f"k forzado = {k_optimo}")
+    axes[0].set_title("Silhouette Score (mayor es mejor)")
+    axes[0].set_xlabel("k")
+    axes[0].set_ylabel("Score")
+    axes[0].legend()
+    axes[0].grid(alpha=0.3)
+    
+    axes[1].plot(list(k_range), calinski_scores, "o-", color=COLORES[1])
+    axes[1].axvline(k_optimo, color="red", linestyle="--", alpha=0.6)
+    axes[1].set_title("Calinski-Harabasz (mayor es mejor)")
+    axes[1].set_xlabel("k")
+    axes[1].grid(alpha=0.3)
+    
+    axes[2].plot(list(k_range), davies_scores, "o-", color=COLORES[2])
+    axes[2].axvline(k_optimo, color="red", linestyle="--", alpha=0.6)
+    axes[2].set_title("Davies-Bouldin (menor es mejor)")
+    axes[2].set_xlabel("k")
+    axes[2].grid(alpha=0.3)
+    
+    _guardar_figura("01_seleccion_k.png")
+    
     return k_optimo
 
 
@@ -465,9 +479,9 @@ def detectar_outliers(df_modelo: pd.DataFrame):
 # 10. FUNCIÓN PRINCIPAL
 # ============================================================================
 def main():
-    """Ejecuta el flujo completo del modelo no supervisado con K-Means ponderado."""
+    """Ejecuta el flujo completo del modelo no supervisado con K-Means ponderado forzado a 2 clusters."""
     print("=" * 60)
-    print("MODELO NO SUPERVISADO - K-MEANS PONDERADO")
+    print("MODELO NO SUPERVISADO - K-MEANS PONDERADO (K=2 FORZADO)")
     print("=" * 60)
     
     # 1. Carga y preparación
@@ -477,8 +491,8 @@ def main():
     print("\n[2] Construyendo espacio de variables ponderado...")
     X_ponderado = construir_espacio_ponderado(df, df_modelo)
     
-    # 3. Selección de k
-    print("\n[3] Seleccionando número óptimo de clusters...")
+    # 3. Selección de k (FORZADO A 2)
+    print("\n[3] Seleccionando número óptimo de clusters (FORZADO K=2)...")
     k_optimo = seleccionar_k(X_ponderado)
     
     # 4. Entrenamiento del modelo
@@ -504,7 +518,7 @@ def main():
     print("\n" + "=" * 60)
     print("RESUMEN FINAL")
     print("=" * 60)
-    print(f"Número de clusters (k): {k_optimo}")
+    print(f"Número de clusters (k): {k_optimo} (FORZADO)")
     print(f"Silhouette score: {silhouette_score(X_ponderado, labels, sample_size=10000, random_state=RANDOM_STATE):.4f}")
     print(f"Clusters con diferenciación ≥ 70%: {sum(porcentaje.max(axis=1) >= 70)} de {len(porcentaje)}")
     print(f"Cobertura: {tamano[porcentaje.max(axis=1) >= 70].sum():.1f}% del total")
