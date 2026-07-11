@@ -1,18 +1,16 @@
 import sys
 import os
 import json
-from datetime import date
-from pathlib import Path
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans, DBSCAN, HDBSCAN, AgglomerativeClustering
-from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.manifold import TSNE
+import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -108,34 +106,68 @@ def cargar_y_preparar(ruta_csv: str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 # ============================================================================
-# 2. CONSTRUCCIÓN DEL ESPACIO PONDERADO
+# 2. CONSTRUCCIÓN DEL ESPACIO PONDERADO (MODIFICADO PARA GUARDAR SCALERS)
 # ============================================================================
-def construir_espacio_ponderado(df: pd.DataFrame, df_modelo: pd.DataFrame) -> np.ndarray:
-
+def construir_espacio_ponderado(
+    df: pd.DataFrame,
+    df_modelo: pd.DataFrame
+) -> tuple[np.ndarray, dict]:
+    """
+    Construye el espacio ponderado y retorna también los scalers y metadatos.
+    """
+    # Obtener columnas dummy completas de tipo_transaccion
     tx_dummies_full = pd.get_dummies(df["tipo_transaccion"], prefix="tx").astype(float)
+    tx_columns = tx_dummies_full.columns.tolist()
 
+    # Columnas de otras variables categóricas
     otras_categoricas = (
         ["riesgo_retraso"]
         + [c for c in df_modelo.columns if c.startswith("modo_envio_")]
         + ["categoria", "region_destino"]
     )
 
-    X_numericas = StandardScaler().fit_transform(df_modelo[NUMERICAS])
-    X_otras = StandardScaler().fit_transform(df_modelo[otras_categoricas])
-    X_tx = StandardScaler().fit_transform(tx_dummies_full)
+    # Crear y entrenar scaler para variables numéricas
+    scaler_numericas = StandardScaler()
+    X_numericas = scaler_numericas.fit_transform(df_modelo[NUMERICAS])
 
+    # Crear y entrenar scaler para otras variables categóricas
+    scaler_otras = StandardScaler()
+    X_otras = scaler_otras.fit_transform(df_modelo[otras_categoricas])
+
+    # Crear y entrenar scaler para tipo_transaccion
+    scaler_tx = StandardScaler()
+    X_tx = scaler_tx.fit_transform(tx_dummies_full)
+
+    # Aplicar pesos y concatenar
     X_ponderado = np.hstack(
         [X_numericas * PESO_NUMERICAS, X_otras * PESO_OTRAS, X_tx * PESO_TX]
     )
     print(f"Espacio de variables ponderado: {X_ponderado.shape}")
-    return X_ponderado
+    
+    # Guardar metadatos importantes para exportación
+    metadatos_espacio = {
+        "NUMERICAS": NUMERICAS,
+        "otras_categoricas": otras_categoricas,
+        "tx_columns": tx_columns,
+        "PESO_NUMERICAS": PESO_NUMERICAS,
+        "PESO_OTRAS": PESO_OTRAS,
+        "PESO_TX": PESO_TX,
+        "scaler_numericas": scaler_numericas,
+        "scaler_otras": scaler_otras,
+        "scaler_tx": scaler_tx,
+    }
+    
+    return X_ponderado, metadatos_espacio
 
 
 # ============================================================================
 # 3. SELECCIÓN DEL NÚMERO ÓPTIMO DE CLUSTERS
 # ============================================================================
-def seleccionar_k(X_ponderado: np.ndarray, k_range=range(2, 9)) -> int:
-
+def seleccionar_k(X_ponderado: np.ndarray, k_range=range(2, 9)) -> tuple[int, list, list, list]:
+    """
+    Selecciona el número óptimo de clusters usando múltiples métricas.
+    Retorna k_optimo y los scores de cada métrica.
+    """
     silhouette_scores, calinski_scores, davies_scores = [], [], []
     
     for k in k_range:
@@ -186,13 +218,14 @@ def seleccionar_k(X_ponderado: np.ndarray, k_range=range(2, 9)) -> int:
     print("\nTabla de selección de k:")
     print(tabla_k.round(4))
 
-    return k_optimo
+    return k_optimo, silhouette_scores, calinski_scores, davies_scores
 
 
 # ============================================================================
 # 4. ENTRENAMIENTO DEL MODELO FINAL
 # ============================================================================
 def entrenar_modelo_final(X_ponderado: np.ndarray, k_optimo: int) -> tuple[KMeans, np.ndarray]:
+    """Entrena el modelo KMeans final con el k óptimo seleccionado."""
     kmeans = KMeans(n_clusters=k_optimo, random_state=RANDOM_STATE, n_init=10)
     labels = kmeans.fit_predict(X_ponderado)
     return kmeans, labels
@@ -201,8 +234,11 @@ def entrenar_modelo_final(X_ponderado: np.ndarray, k_optimo: int) -> tuple[KMean
 # ============================================================================
 # 5. ANÁLISIS DE PCA Y CARGAS
 # ============================================================================
-def analizar_pca(X_ponderado: np.ndarray, df_modelo: pd.DataFrame):
-
+def analizar_pca(X_ponderado: np.ndarray, df_modelo: pd.DataFrame) -> tuple[np.ndarray, int]:
+    """
+    Realiza análisis PCA para visualización y determina
+    número de componentes necesarios para 85% de varianza.
+    """
     pca = PCA(random_state=RANDOM_STATE)
     pca_resultado = pca.fit_transform(X_ponderado)
 
@@ -240,6 +276,7 @@ def analizar_pca(X_ponderado: np.ndarray, df_modelo: pd.DataFrame):
 # 6. VISUALIZACIONES
 # ============================================================================
 def graficar_tamano_clusters(tamano: pd.Series):
+    """Gráfica del tamaño relativo de cada cluster."""
     plt.figure(figsize=(7, 4.5))
     tamano_ordenado = tamano.sort_index()
     barras = plt.bar(
@@ -258,6 +295,7 @@ def graficar_tamano_clusters(tamano: pd.Series):
 
 
 def graficar_composicion_objetivo(porcentaje: pd.DataFrame, tasa_base: float):
+    """Gráfica de composición COMPLETE/CANCELED por cluster."""
     porcentaje = porcentaje.sort_index()
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     clusters = [f"Cluster {i}" for i in porcentaje.index]
@@ -283,6 +321,7 @@ def graficar_composicion_objetivo(porcentaje: pd.DataFrame, tasa_base: float):
 
 
 def graficar_composicion_tx(df: pd.DataFrame, df_modelo: pd.DataFrame):
+    """Gráfica de composición de tipo_transaccion por cluster."""
     tabla_tx = pd.crosstab(df_modelo["cluster_mejorado"], df["tipo_transaccion"])
     porcentaje_tx = tabla_tx.div(tabla_tx.sum(axis=1), axis=0) * 100
 
@@ -304,6 +343,7 @@ def graficar_composicion_tx(df: pd.DataFrame, df_modelo: pd.DataFrame):
 
 
 def graficar_clusters_pca2d(X_ponderado: np.ndarray, labels: np.ndarray, n_muestra: int = 8000):
+    """Gráfica de clusters en 2D usando PCA."""
     rng = np.random.default_rng(RANDOM_STATE)
     n_muestra = min(n_muestra, len(X_ponderado))
     idx = rng.choice(len(X_ponderado), size=n_muestra, replace=False)
@@ -353,8 +393,16 @@ def graficar_tsne(X_ponderado: np.ndarray, df_modelo: pd.DataFrame, cluster_col:
 # ============================================================================
 # 7. EVALUACIÓN DEL MODELO
 # ============================================================================
-def evaluar_modelo(df: pd.DataFrame, df_modelo: pd.DataFrame, X_ponderado: np.ndarray,
-                    labels: np.ndarray) -> tuple[pd.DataFrame, pd.Series]:
+def evaluar_modelo(
+    df: pd.DataFrame,
+    df_modelo: pd.DataFrame,
+    X_ponderado: np.ndarray,
+    labels: np.ndarray
+) -> tuple[pd.DataFrame, pd.Series, float, float, float]:
+    """
+    Evalúa el modelo con métricas internas y externas.
+    Retorna porcentaje, tamaño, silhouette, calinski y davies.
+    """
     # Métricas internas
     sil = silhouette_score(X_ponderado, labels, sample_size=10000, random_state=RANDOM_STATE)
     cal = calinski_harabasz_score(X_ponderado, labels)
@@ -403,14 +451,17 @@ def evaluar_modelo(df: pd.DataFrame, df_modelo: pd.DataFrame, X_ponderado: np.nd
     graficar_clusters_pca2d(X_ponderado, labels)
     graficar_tsne(X_ponderado, df_modelo, "cluster_mejorado")
 
-    return porcentaje, tamano
+    return porcentaje, tamano, sil, cal, dav
 
 
 # ============================================================================
 # 8. DETECCIÓN DE ANOMALÍAS
 # ============================================================================
-def detectar_anomalias(kmeans: KMeans, X_ponderado: np.ndarray, df_modelo: pd.DataFrame):
-    """Detección de anomalías basada en distancia al centroide más cercano."""
+def detectar_anomalias(kmeans: KMeans, X_ponderado: np.ndarray, df_modelo: pd.DataFrame) -> tuple[np.ndarray, float]:
+    """
+    Detección de anomalías basada en distancia al centroide más cercano.
+    Retorna máscara de anomalías y umbral utilizado.
+    """
     distancias = kmeans.transform(X_ponderado)
     distancia_minima = np.min(distancias, axis=1)
 
@@ -431,13 +482,13 @@ def detectar_anomalias(kmeans: KMeans, X_ponderado: np.ndarray, df_modelo: pd.Da
             print(f"    Normales  - media: {df_normales[col].mean():.2f}")
 
     df_modelo['es_anomalia'] = anomalias
-    return anomalias
+    return anomalias, umbral
 
 
 # ============================================================================
 # 9. DETECCIÓN DE OUTLIERS UNIVARIADOS
 # ============================================================================
-def detectar_outliers(df_modelo: pd.DataFrame):
+def detectar_outliers(df_modelo: pd.DataFrame) -> dict:
     """Detección de outliers univariados usando IQR."""
     def detectar_outliers_iqr(serie):
         Q1, Q3 = serie.quantile(0.25), serie.quantile(0.75)
@@ -462,10 +513,131 @@ def detectar_outliers(df_modelo: pd.DataFrame):
 
 
 # ============================================================================
-# 10. FUNCIÓN PRINCIPAL
+# 10. FUNCIÓN PARA GUARDAR ARTEFACTOS
 # ============================================================================
-def main():
-    """Ejecuta el flujo completo del modelo no supervisado con K-Means ponderado."""
+def guardar_artefactos(
+    kmeans: KMeans,
+    metadatos_espacio: dict,
+    k_optimo: int,
+    metricas: dict,
+    umbral_anomalias: float,
+    df_modelo: pd.DataFrame,
+    porcentaje: pd.DataFrame,
+    tamano: pd.Series,
+) -> dict:
+    """
+    Guarda todos los artefactos necesarios para el modelo no supervisado.
+    Retorna el diccionario de artefactos guardados.
+    """
+    
+    print("\n" + "=" * 60)
+    print("GUARDANDO ARTEFACTOS DEL MODELO")
+    print("=" * 60)
+    
+    # Obtener mapas de frecuencia para categorías
+    df_original = pd.read_csv(RUTA_CSV)
+    freq_categoria = df_original['categoria'].value_counts(normalize=True).to_dict()
+    freq_region = df_original['region_destino'].value_counts(normalize=True).to_dict()
+    
+    # Obtener columnas dummy de modo_envio
+    modo_envio_dummies = [c for c in df_modelo.columns if c.startswith('modo_envio_')]
+    
+    # Crear diccionario de artefactos
+    artefactos = {
+        # Modelo principal
+        'kmeans': kmeans,
+        
+        # Scalers
+        'scaler_numericas': metadatos_espacio['scaler_numericas'],
+        'scaler_otras': metadatos_espacio['scaler_otras'],
+        'scaler_tx': metadatos_espacio['scaler_tx'],
+        
+        # Columnas y configuraciones
+        'NUMERICAS': metadatos_espacio['NUMERICAS'],
+        'otras_categoricas': metadatos_espacio['otras_categoricas'],
+        'tx_columns': metadatos_espacio['tx_columns'],
+        'modo_envio_dummies': modo_envio_dummies,
+        
+        # Pesos
+        'PESO_NUMERICAS': metadatos_espacio['PESO_NUMERICAS'],
+        'PESO_OTRAS': metadatos_espacio['PESO_OTRAS'],
+        'PESO_TX': metadatos_espacio['PESO_TX'],
+        
+        # Mapas de frecuencia para codificación
+        'freq_categoria': freq_categoria,
+        'freq_region': freq_region,
+        
+        # Parámetros del modelo
+        'k_optimo': k_optimo,
+        'RANDOM_STATE': RANDOM_STATE,
+        
+        # Métricas
+        'silhouette': metricas['silhouette'],
+        'calinski_harabasz': metricas['calinski_harabasz'],
+        'davies_bouldin': metricas['davies_bouldin'],
+        
+        # Umbral de anomalías
+        'umbral_anomalias': umbral_anomalias,
+        
+        # Perfiles de clusters
+        'porcentaje_complete_por_cluster': porcentaje.to_dict(),
+        'tamano_clusters': tamano.to_dict(),
+        
+        # Fecha de entrenamiento
+        'fecha_entrenamiento': datetime.now().isoformat(),
+        
+        # Metadatos adicionales
+        'n_clusters': k_optimo,
+        'n_features': kmeans.n_features_in_,
+    }
+    
+    # Guardar artefactos con joblib
+    ruta_pkl = "modelo_kmeans_artifacts.pkl"
+    joblib.dump(artefactos, ruta_pkl)
+    print(f"✅ modelo_kmeans_artifacts.pkl guardado correctamente")
+    print(f"   Tamaño: {os.path.getsize(ruta_pkl):,} bytes")
+    
+    # Guardar metadata en JSON
+    metadata = {
+        'modelo': 'KMeans',
+        'k_optimo': k_optimo,
+        'silhouette': float(metricas['silhouette']),
+        'calinski_harabasz': float(metricas['calinski_harabasz']),
+        'davies_bouldin': float(metricas['davies_bouldin']),
+        'pesos': {
+            'PESO_NUMERICAS': PESO_NUMERICAS,
+            'PESO_OTRAS': PESO_OTRAS,
+            'PESO_TX': PESO_TX,
+        },
+        'columnas_utilizadas': {
+            'NUMERICAS': NUMERICAS,
+            'otras_categoricas': metadatos_espacio['otras_categoricas'],
+            'tx_columns': metadatos_espacio['tx_columns'],
+        },
+        'fecha_entrenamiento': datetime.now().isoformat(),
+        'tamaño_dataset': len(df_modelo),
+        'n_features': kmeans.n_features_in_,
+        'umbral_anomalias': float(umbral_anomalias),
+        'random_state': RANDOM_STATE,
+    }
+    
+    ruta_json = "metadata_kmeans.json"
+    with open(ruta_json, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2, ensure_ascii=False)
+    print(f"✅ metadata_kmeans.json guardado correctamente")
+    print(f"   Tamaño: {os.path.getsize(ruta_json):,} bytes")
+    
+    return artefactos
+
+
+# ============================================================================
+# 11. FUNCIÓN PRINCIPAL
+# ============================================================================
+def main() -> tuple[KMeans, pd.DataFrame, dict]:
+    """
+    Ejecuta el flujo completo del modelo no supervisado con K-Means ponderado.
+    Retorna modelo entrenado, dataframe procesado y artefactos.
+    """
     print("=" * 60)
     print("MODELO NO SUPERVISADO - K-MEANS PONDERADO")
     print("=" * 60)
@@ -475,11 +647,11 @@ def main():
     
     # 2. Construcción del espacio ponderado
     print("\n[2] Construyendo espacio de variables ponderado...")
-    X_ponderado = construir_espacio_ponderado(df, df_modelo)
+    X_ponderado, metadatos_espacio = construir_espacio_ponderado(df, df_modelo)
     
     # 3. Selección de k
     print("\n[3] Seleccionando número óptimo de clusters...")
-    k_optimo = seleccionar_k(X_ponderado)
+    k_optimo, _, _, _ = seleccionar_k(X_ponderado)
     
     # 4. Entrenamiento del modelo
     kmeans, labels = entrenar_modelo_final(X_ponderado, k_optimo)
@@ -490,27 +662,47 @@ def main():
     
     # 6. Evaluación del modelo
     print("\n[6] Evaluando modelo...")
-    porcentaje, tamano = evaluar_modelo(df, df_modelo, X_ponderado, labels)
+    porcentaje, tamano, sil, cal, dav = evaluar_modelo(df, df_modelo, X_ponderado, labels)
     
     # 7. Detección de anomalías
     print("\n[7] Detectando anomalías...")
-    detectar_anomalias(kmeans, X_ponderado, df_modelo)
+    anomalias, umbral_anomalias = detectar_anomalias(kmeans, X_ponderado, df_modelo)
     
     # 8. Detección de outliers
     print("\n[8] Detectando outliers...")
     detectar_outliers(df_modelo)
     
-    # 9. Resumen final
+    # 9. Guardar artefactos
+    metricas = {
+        'silhouette': sil,
+        'calinski_harabasz': cal,
+        'davies_bouldin': dav,
+    }
+    
+    artefactos = guardar_artefactos(
+        kmeans=kmeans,
+        metadatos_espacio=metadatos_espacio,
+        k_optimo=k_optimo,
+        metricas=metricas,
+        umbral_anomalias=umbral_anomalias,
+        df_modelo=df_modelo,
+        porcentaje=porcentaje,
+        tamano=tamano,
+    )
+    
+    # 10. Resumen final
     print("\n" + "=" * 60)
     print("RESUMEN FINAL")
     print("=" * 60)
     print(f"Número de clusters (k): {k_optimo}")
-    print(f"Silhouette score: {silhouette_score(X_ponderado, labels, sample_size=10000, random_state=RANDOM_STATE):.4f}")
+    print(f"Silhouette score: {sil:.4f}")
     print(f"Clusters con diferenciación ≥ 70%: {sum(porcentaje.max(axis=1) >= 70)} de {len(porcentaje)}")
     print(f"Cobertura: {tamano[porcentaje.max(axis=1) >= 70].sum():.1f}% del total")
     print(f"\nTodas las gráficas guardadas en '{CARPETA_GRAFICAS}/'")
+    print(f"\n✅ modelo_kmeans_artifacts.pkl guardado correctamente")
+    print(f"✅ metadata_kmeans.json guardado correctamente")
     
-    return kmeans, df_modelo
+    return kmeans, df_modelo, artefactos
 
 
 # ============================================================================

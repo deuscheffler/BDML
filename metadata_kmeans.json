@@ -1,0 +1,43 @@
+{
+  "modelo": "KMeans",
+  "k_optimo": 4,
+  "silhouette": 0.6051189279051978,
+  "calinski_harabasz": 202462.70173744886,
+  "davies_bouldin": 0.59911665502222,
+  "pesos": {
+    "PESO_NUMERICAS": 0.4,
+    "PESO_OTRAS": 0.4,
+    "PESO_TX": 1.5
+  },
+  "columnas_utilizadas": {
+    "NUMERICAS": [
+      "dias_envio_real",
+      "dias_envio_prog",
+      "beneficio_pedido",
+      "ventas_cliente",
+      "precio_base",
+      "margen_ganancia_item",
+      "cantidad",
+      "ventas"
+    ],
+    "otras_categoricas": [
+      "riesgo_retraso",
+      "modo_envio_Same Day",
+      "modo_envio_Second Class",
+      "modo_envio_Standard Class",
+      "categoria",
+      "region_destino"
+    ],
+    "tx_columns": [
+      "tx_CASH",
+      "tx_DEBIT",
+      "tx_PAYMENT",
+      "tx_TRANSFER"
+    ]
+  },
+  "fecha_entrenamiento": "2026-07-11T16:46:30.420206",
+  "tamaño_dataset": 151087,
+  "n_features": 18,
+  "umbral_anomalias": 2.235591747924204,
+  "random_state": 42
+}

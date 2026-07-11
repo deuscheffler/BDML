@@ -5,10 +5,15 @@
     "estado_entrega",
     "tipo_transaccion"
   ],
+  "umbral_alerta_recomendado": 0.65,
   "metricas_test": {
+    "accuracy": 0.661,
+    "precision": 0.6792,
+    "recall": 0.9247,
     "f1": 0.7832,
-    "roc_auc": 0.5372,
-    "accuracy": 0.661
+    "roc_auc": 0.5372
   },
-  "fecha_entrenamiento": "2026-07-10"
+  "fecha_entrenamiento": "2026-07-11",
+  "dataset_origen": "CSV Local",
+  "archivo_csv": "DataCoSupplyChain_Limpio.csv"
 }
