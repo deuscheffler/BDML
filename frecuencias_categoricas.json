@@ -1,0 +1,27 @@
+{
+  "region_destino": {
+    "Central America": 0.15699732438136707,
+    "Western Europe": 0.1501725580132839,
+    "South America": 0.08273367346373511,
+    "Oceania": 0.05621568920723027,
+    "Northern Europe": 0.0542435976268426,
+    "Southeast Asia": 0.05284208310482553,
+    "Southern Europe": 0.05224380813100006,
+    "Caribbean": 0.04607825215074313,
+    "West of USA ": 0.04427788764617575,
+    "South Asia": 0.042826516876339885,
+    "Eastern Asia": 0.04032816490230945,
+    "East of USA": 0.038306217074103005,
+    "West Asia": 0.033287354793678225,
+    "US Center ": 0.032611525656579085,
+    "South of  USA ": 0.02240761360300024,
+    "Eastern Europe": 0.021715165716628168,
+    "West Africa": 0.020474299104249413,
+    "North Africa": 0.017903932550036285,
+    "East Africa": 0.010259307884488613,
+    "Central Africa": 0.009289880843567713,
+    "Southern Africa": 0.006409297636259895,
+    "Canada": 0.005312460184246534,
+    "Central Asia": 0.003063389449310045
+  }
+}
