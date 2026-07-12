@@ -1,11 +1,11 @@
 streamlit
 pandas
 numpy
-plotly
+sqlalchemy
+pyodbc
 pymongo
 python-dotenv
 scikit-learn
 joblib
-pyodbc
-sqlalchemy
-streamlit-option-menu
+matplotlib
+seaborn

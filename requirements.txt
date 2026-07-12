@@ -1,1 +1,12 @@
 
+streamlit
+pandas
+numpy
+sqlalchemy
+pyodbc
+pymongo
+python-dotenv
+scikit-learn
+joblib
+matplotlib
+seaborn

@@ -6,6 +6,7 @@
     "tipo_transaccion"
   ],
   "umbral_alerta_recomendado": 0.65,
+  "umbral_alerta_recomendado": 0.65,
   "metricas_test": {
     "accuracy": 0.6616,
     "precision": 0.6793,

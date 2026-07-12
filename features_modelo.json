@@ -17,6 +17,7 @@
   "riesgo_por_precio",
   "riesgo_retraso",
   "cumple_plazo",
+  "categoria",
   "region_destino",
   "modo_envio_Same Day",
   "modo_envio_Second Class",
