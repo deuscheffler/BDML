@@ -469,7 +469,7 @@ def obtener_o_crear_ubicacion(
 # =============================================================================
 
 def guardar_pedido_sql(
-    id_raw: int,
+    id_raw: Optional[int],
     order_id: str,
     customer_id: str,
     fecha_pedido: datetime,
@@ -507,12 +507,12 @@ def guardar_pedido_sql(
     Esta función orquesta todas las operaciones de búsqueda/creación
     de las tablas relacionadas y finalmente inserta el pedido.
     
-    NOTA: id_raw debe resolverse antes de integrar el guardado desde Streamlit,
-    porque los pedidos creados por la aplicación no provienen necesariamente
-    de DataCoSupplyChain_RAW.
+    NOTA: 
+    - Los registros históricos provenientes del ETL pueden conservar su id_raw.
+    - Los pedidos creados desde Streamlit deben enviarse con id_raw=None.
     
     Args:
-        id_raw: ID del registro original (NOT NULL)
+        id_raw: ID del registro original (opcional, permite NULL)
         order_id: Identificador único del pedido (para MongoDB)
         customer_id: Identificador único del cliente (para MongoDB)
         fecha_pedido: Fecha del pedido
