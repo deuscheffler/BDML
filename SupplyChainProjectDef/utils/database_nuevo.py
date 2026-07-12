@@ -165,7 +165,11 @@ def test_sql_connection() -> Tuple[bool, str]:
         engine = get_sql_engine()
         with engine.connect() as conn:
             # Obtener información del servidor
-            result = conn.execute(text("SELECT @@SERVERNAME AS server, DB_NAME() AS database"))
+            result = conn.execute(text("""
+                SELECT
+                    @@SERVERNAME AS servidor,
+                    DB_NAME() AS base_datos
+            """))
             row = result.fetchone()
             
             if row:
