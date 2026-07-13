@@ -6,7 +6,6 @@
     "tipo_transaccion"
   ],
   "umbral_alerta_recomendado": 0.65,
-  "umbral_alerta_recomendado": 0.65,
   "metricas_test": {
     "accuracy": 0.6616,
     "precision": 0.6793,
@@ -14,7 +13,7 @@
     "f1": 0.7838,
     "roc_auc": 0.5419
   },
-  "fecha_entrenamiento": "2026-07-12",
+  "fecha_entrenamiento": "2026-07-13",
   "dataset_origen": "SQL Server",
   "server": "OMEGA-DELL",
   "database": "BD_ML_RELACIONAL"
