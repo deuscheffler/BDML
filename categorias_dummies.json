@@ -4,5 +4,11 @@
     "Same Day",
     "Second Class",
     "Standard Class"
+  ],
+  "cluster_kmeans": [
+    0,
+    1,
+    2,
+    3
   ]
 }

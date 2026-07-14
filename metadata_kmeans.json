@@ -1,9 +1,9 @@
 {
   "modelo": "KMeans",
   "k_optimo": 4,
-  "silhouette": 0.6051189279051978,
-  "calinski_harabasz": 202462.70173744886,
-  "davies_bouldin": 0.59911665502222,
+  "silhouette": 0.6184219224561107,
+  "calinski_harabasz": 241903.25361563353,
+  "davies_bouldin": 0.5791004973203495,
   "pesos": {
     "PESO_NUMERICAS": 0.4,
     "PESO_OTRAS": 0.4,
@@ -35,9 +35,32 @@
       "tx_TRANSFER"
     ]
   },
-  "fecha_entrenamiento": "2026-07-11T16:46:30.420206",
-  "tamaño_dataset": 151087,
+  "fecha_entrenamiento": "2026-07-13T23:18:03.831590",
+  "tamaño_dataset": 180519,
   "n_features": 18,
-  "umbral_anomalias": 2.235591747924204,
+  "umbral_anomalias": 2.3089368726902886,
+  "limites_outliers": {
+    "dias_envio_real": {
+      "Q1": 2.0,
+      "Q3": 5.0,
+      "IQR": 3.0,
+      "cota_inferior": -2.5,
+      "cota_superior": 9.5
+    },
+    "beneficio_pedido": {
+      "Q1": 7.0,
+      "Q3": 64.8,
+      "IQR": 57.8,
+      "cota_inferior": -79.69999999999999,
+      "cota_superior": 151.5
+    },
+    "ventas": {
+      "Q1": 119.98,
+      "Q3": 299.95,
+      "IQR": 179.96999999999997,
+      "cota_inferior": -149.9749999999999,
+      "cota_superior": 569.905
+    }
+  },
   "random_state": 42
 }

@@ -16,9 +16,15 @@
   "eficiencia_cliente",
   "riesgo_por_precio",
   "riesgo_retraso",
+  "es_anomalia",
+  "es_outlier",
   "cumple_plazo",
+  "categoria",
   "region_destino",
   "modo_envio_Same Day",
   "modo_envio_Second Class",
-  "modo_envio_Standard Class"
+  "modo_envio_Standard Class",
+  "cluster_kmeans_1",
+  "cluster_kmeans_2",
+  "cluster_kmeans_3"
 ]
