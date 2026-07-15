@@ -19,6 +19,7 @@ Cada simulación se registra en MongoDB vía mongo_logger.py.
 
 import streamlit as st
 
+from componentes import renderizar_resultado_prediccion
 from datos import cargar_datos_dashboard, promedio_envio_por_modo
 from load_models import (
     cargar_artefactos_kmeans,
@@ -145,37 +146,9 @@ def render() -> None:
     # --- Resultado ---
     st.markdown('<div class="gdlm-section-label">Resultado de la simulación</div>', unsafe_allow_html=True)
 
-    clase = "completado" if resultado["prediccion"] == "COMPLETE" else "cancelado"
-    texto_resultado = "✅ Se completaría" if resultado["prediccion"] == "COMPLETE" else "⚠️ Se cancelaría"
-
-    with st.container(border=True):
-        col_badge, col_prob = st.columns([2, 1], gap="large")
-        with col_badge:
-            st.markdown(
-                f'<span class="gdlm-resultado-badge {clase}">{texto_resultado}</span>',
-                unsafe_allow_html=True,
-            )
-        with col_prob:
-            st.markdown(
-                f"""<div class="gdlm-metric-chip">
-                    <div class="gdlm-metric-chip-label">Probabilidad de completado</div>
-                    <div class="gdlm-metric-chip-value">{resultado['probabilidad_completado'] * 100:.1f}%</div>
-                </div>""",
-                unsafe_allow_html=True,
-            )
-
-        alerta_txt = "⚠️ Por debajo del umbral de alerta" if resultado["alerta_riesgo"] else "Dentro de un rango normal"
-        st.markdown(
-            f"""
-            <div class="gdlm-resultado-detalle">
-                Cluster asignado: <b>{resultado['cluster_kmeans']}</b> ({resultado['cluster_etiqueta']})
-                &nbsp;·&nbsp; Anomalía: <b>{'Sí' if resultado['es_anomalia'] else 'No'}</b>
-                &nbsp;·&nbsp; Outlier: <b>{'Sí' if resultado['es_outlier'] else 'No'}</b>
-                <br/>
-                Días de envío real estimados (promedio histórico para "{modo_envio_sel}"): <b>{dias_real_estimado:.1f} días</b>
-                &nbsp;·&nbsp; {alerta_txt}
-                {' · registrado en MongoDB' if mongo_disponible else ' · no se registró en MongoDB (sin conexión)'}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    nota_pie = (
+        f"Días de envío real estimados (promedio histórico para \"{modo_envio_sel}\"): "
+        f"<b>{dias_real_estimado:.1f} días</b>"
+        f"{' · registrado en MongoDB' if mongo_disponible else ' · no se registró en MongoDB (sin conexión)'}"
+    )
+    renderizar_resultado_prediccion(resultado, nota_pie=nota_pie)

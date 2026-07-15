@@ -378,6 +378,49 @@ div[class*="st-key-img_card_"] {
     margin-top: 0.5rem; line-height: 1.6;
 }
 
+/* ---------- Comparativa de modelos (Realizar Pedido / Predicción) ---------- */
+.gdlm-modelo-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 1.2rem 1.3rem;
+    height: 100%;
+}
+.gdlm-modelo-card-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.85rem;
+    color: var(--color-text); margin-bottom: 0.9rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+}
+.gdlm-modelo-card-header .icon { font-size: 1.1rem; }
+.gdlm-modelo-card-fila {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0;
+}
+.gdlm-modelo-card-fila + .gdlm-modelo-card-fila { border-top: 1px solid var(--color-border); }
+.gdlm-modelo-card-fila-label { font-size: 0.8rem; color: var(--color-muted); }
+.gdlm-modelo-card-fila-valor { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: var(--color-text); font-weight: 600; }
+
+/* Veredicto de concordancia entre los dos modelos */
+.gdlm-veredicto {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+    padding: 0.6rem 1rem; border-radius: 10px;
+}
+.gdlm-veredicto.coincide {
+    background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); color: var(--color-cyan-soft);
+}
+.gdlm-veredicto.discrepa {
+    background: rgba(245, 166, 35, 0.12); border: 1px solid rgba(245, 166, 35, 0.35); color: var(--color-amber);
+}
+.gdlm-veredicto.mixto_v {
+    background: rgba(139, 150, 184, 0.12); border: 1px solid rgba(139, 150, 184, 0.3); color: var(--color-muted);
+}
+.gdlm-nota-pie {
+    font-family: 'Inter', sans-serif; font-size: 0.72rem; color: var(--color-muted);
+    margin-top: 0.9rem; line-height: 1.5;
+}
+
 /* ---------- Ajuste de widgets nativos de Streamlit para el tema oscuro ---------- */
 [data-testid="stVerticalBlockBorderWrapper"] {
     background: var(--color-surface);

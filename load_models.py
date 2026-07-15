@@ -394,6 +394,14 @@ def obtener_pedido_por_id(_engine, id_pedido: int) -> dict | None:
     if df.empty:
         return None
     fila = df.iloc[0].to_dict()
+
+    # El SP/vista devuelve 'nombre_categoria' (columna real de la tabla
+    # Categoria), no 'categoria'. Se renombra aquí para que coincida con
+    # lo que espera preprocesar_para_supervisado/preprocesar_para_kmeans
+    # -- el mismo criterio que ya aplican los scripts de entrenamiento.
+    if "nombre_categoria" in fila and "categoria" not in fila:
+        fila["categoria"] = fila.pop("nombre_categoria")
+
     # cluster_kmeans puede venir NULL si ese pedido nunca pasó por una
     # corrida de KMeans (LEFT JOIN en la vista); se avisa en vez de fallar.
     if pd.isna(fila.get("cluster_kmeans")):

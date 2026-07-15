@@ -14,7 +14,7 @@ a medida que se agregan más páginas.
 import streamlit as st
 
 from estilos import inyectar_estilos, cargar_logo_html
-from paginas import inicio, modelo_supervisado, modelo_no_supervisado, realizar_pedido
+from paginas import inicio, modelo_supervisado, modelo_no_supervisado, prediccion, realizar_pedido
 
 st.set_page_config(
     page_title="GDLM",
@@ -89,6 +89,8 @@ elif PAGINA_ACTUAL == "Modelo Supervisado":
     modelo_supervisado.render()
 elif PAGINA_ACTUAL == "Modelo No Supervisado":
     modelo_no_supervisado.render()
+elif PAGINA_ACTUAL == "Predicción":
+    prediccion.render()
 elif PAGINA_ACTUAL == "Realizar Pedido":
     realizar_pedido.render()
 else:
